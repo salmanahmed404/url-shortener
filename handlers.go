@@ -1,8 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +31,19 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func shortenHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	formData := r.PostForm
-
-	fmt.Fprintln(w, formData)
+	inputURL := r.PostForm.Get("url_input")
+	db, err := gorm.Open("sqlite3", "gorl.db")
+	defer db.Close()
+	if err != nil {
+		w.Write([]byte("DB Initialization Error"))
+		log.Fatal(err)
+	}
+	url := URL{LongURL: inputURL}
+	result := db.Create(&url)
+	if result.Error != nil {
+		w.Write([]byte("DB Create Error"))
+		log.Fatal(result.Error)
+	}
+	shortURL := base62Encode(url.ID)
+	w.Write([]byte(shortURL))
 }
