@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 )
 
@@ -24,13 +25,12 @@ func main() {
 
 	//HttpServer
 	addr := "127.0.0.1:8080"
-	s := http.Server{
-		Addr: addr,
-	}
+	r := mux.NewRouter()
 
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/shorten/", shortenHandler)
+	r.HandleFunc("/", indexHandler).Methods("GET")
+	r.HandleFunc("/shorten/", shortenHandler).Methods("POST")
+	r.HandleFunc("/gorl/{shortURL}", redirectHandler).Methods("GET")
 
 	log.Println("Listening on: ", addr)
-	log.Fatal(s.ListenAndServe())
+	log.Fatal(http.ListenAndServe(addr, r))
 }

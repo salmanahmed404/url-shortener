@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -35,7 +36,7 @@ func shortenHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := gorm.Open("sqlite3", "gorl.db")
 	defer db.Close()
 	if err != nil {
-		w.Write([]byte("DB Initialization Error"))
+		w.Write([]byte("DB Init Error"))
 		log.Fatal(err)
 	}
 	url := URL{LongURL: inputURL}
@@ -46,4 +47,19 @@ func shortenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	shortURL := base62Encode(url.ID)
 	w.Write([]byte(shortURL))
+}
+
+func redirectHandler(w http.ResponseWriter, r *http.Request) {
+	shortURL := mux.Vars(r)["shortURL"]
+	db, err := gorm.Open("sqlite3", "gorl.db")
+	defer db.Close()
+	if err != nil {
+		w.Write([]byte("DB Init Error"))
+		log.Fatal(err)
+	}
+	id := base62Decode(shortURL)
+	var url URL
+	db.First(&url, id)
+	redirectURL := "http://" + url.LongURL
+	http.Redirect(w, r, redirectURL, 301)
 }
